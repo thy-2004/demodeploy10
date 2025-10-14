@@ -5,12 +5,12 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('github-cred') // ID credential GitHub
     }
 
-    stages {
-        stage('Clone Code') {
-            steps {
-                git branch: 'main', credentialsId: 'github-cred', url: 'https://github.com/thy-2004/proshop-v2.git'
-            }
+    stage('Clone Code') {
+        steps {
+            git credentialsId: 'github-cred', url: 'https://github.com/thy-2004/demodeploy10.git', branch: 'main'
         }
+    }
+
 
         stage('Build Docker Images') {
             steps {
