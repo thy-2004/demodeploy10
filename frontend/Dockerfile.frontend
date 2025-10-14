@@ -1,0 +1,23 @@
+# frontend/Dockerfile.frontend
+
+# Stage 1: build (CRA -> output /build)
+FROM node:18-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+COPY . .
+RUN npm install
+RUN npm run build   # tạo thư mục /app/build
+
+# Stage 2: serve static bằng nginx
+FROM nginx:alpine
+# bỏ default conf
+RUN rm -f /etc/nginx/conf.d/default.conf
+
+# cấu hình nginx (listen 8080, proxy /api sang backend để khỏi dính CORS)
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# COPY đúng thư mục build của CRA
+COPY --from=build /app/build /usr/share/nginx/html
+
+EXPOSE 8080
+CMD ["nginx","-g","daemon off;"]

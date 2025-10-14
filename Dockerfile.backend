@@ -1,0 +1,15 @@
+# Dockerfile.backend (ở root)
+FROM node:18-alpine as base
+WORKDIR /app
+
+# copy backend
+COPY package*.json ./
+COPY backend ./backend
+
+# cài deps cho backend
+WORKDIR /app/backend
+RUN npm install --omit=dev
+
+# chạy
+EXPOSE 5000
+CMD ["npm", "run", "server"]

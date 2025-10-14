@@ -1,0 +1,48 @@
+services:
+  mongo:
+    image: mongo:6
+    container_name: proshop-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    networks: [proshop-net]
+
+  backend:
+    image: docker.io/<DOCKER_USER>/proshop-backend:latest
+    container_name: proshop-backend
+    restart: unless-stopped
+    depends_on: [mongo]
+    environment:
+      NODE_ENV: production
+      PORT: "5000"
+      MONGO_URI: mongodb://mongo:27017/proshop
+      JWT_SECRET: ${JWT_SECRET}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID}
+      PAGINATION_LIMIT: "8"
+    ports:
+      - "5000:5000"
+    networks: [proshop-net]
+    env_file:
+      - .env.production
+  frontend:
+    image: docker.io/<DOCKER_USER>/proshop-frontend:latest
+    container_name: proshop-frontend
+    restart: unless-stopped
+    depends_on: [backend]
+    ports:
+      - "8081:8080"   # web = http://<server-ip>:8081
+    networks: [proshop-net]
+
+  # (chạy LẦN ĐẦU hoặc khi muốn seed lại)
+  # seed:
+  #   image: docker.io/<DOCKER_USER>/proshop-backend:latest
+  #   depends_on: [mongo]
+  #   entrypoint: ["npm","run","data:import"]
+  #   networks: [proshop-net]
+  #   restart: "no"
+
+networks:
+  proshop-net: { driver: bridge }
+
+volumes:
+  mongo_data:
