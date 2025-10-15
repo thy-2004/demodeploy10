@@ -12,4 +12,4 @@ RUN npm install --omit=dev
 
 # chạy
 EXPOSE 5000
-CMD ["npm", "run", "server"]
+CMD ["npm", "start", "server"]
