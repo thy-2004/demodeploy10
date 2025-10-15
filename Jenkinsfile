@@ -5,7 +5,7 @@ pipeline {
     IMAGE_NAME   = 'demodeploy10'          // Tên image
     DOCKER_USER  = 'thyhoang'              // Docker Hub username
     SERVER_USER  = 'ubuntu'                // SSH user EC2
-    SERVER_HOST  = '15.134.138.22'         // IP EC2
+    SERVER_HOST  = '3.106.239.158'         // IP EC2
   }
 
   stages {
