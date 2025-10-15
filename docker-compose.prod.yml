@@ -8,7 +8,7 @@ services:
     networks: [proshop-net]
 
   backend:
-    image: docker.io/<DOCKER_USER>/proshop-backend:latest
+    image: docker.io/thyhoang/proshop-backend:latest
     container_name: proshop-backend
     restart: unless-stopped
     depends_on: [mongo]
@@ -25,7 +25,7 @@ services:
     env_file:
       - .env.production
   frontend:
-    image: docker.io/<DOCKER_USER>/proshop-frontend:latest
+    image: docker.io/thyhoang/proshop-frontend:latest
     container_name: proshop-frontend
     restart: unless-stopped
     depends_on: [backend]
