@@ -59,7 +59,7 @@ pipeline {
 
               echo '🚀 Khởi chạy container ứng dụng...'
               docker run -d --name $IMAGE_NAME \
-                -p 80:3000 \
+                -p 80:5000 \
                 --env-file /home/ubuntu/.env \
                 --link mongo:mongo \
                 docker.io/$DOCKER_USER/$IMAGE_NAME:latest
