@@ -2,37 +2,36 @@ pipeline {
   agent any
 
   environment {
-    IMAGE_NAME   = 'demodeploy10'          // Tên image backend
-    DOCKER_USER  = 'thyhoang'              // Docker Hub username
-    SERVER_USER  = 'ubuntu'                // Tên user SSH của EC2
-    SERVER_HOST  = '3.106.239.158'         // Public IP của EC2
+    DOCKER_USER  = 'thyhoang'
+    SERVER_USER  = 'ubuntu'
+    SERVER_HOST  = '3.106.239.158'
   }
 
   stages {
     stage('Checkout Code') {
       steps {
-        // Clone repo từ GitHub (public repo thì không cần credential)
         git branch: 'main', url: 'https://github.com/thy-2004/demodeploy10.git'
       }
     }
 
-    stage('Build & Push Docker Image') {
+    stage('Build & Push Backend + Frontend Images') {
       steps {
-        // Đăng nhập Docker Hub, build & push image
         withCredentials([usernamePassword(
           credentialsId: 'dockerhub-cred', 
           usernameVariable: 'DOCKER_USER_NAME', 
           passwordVariable: 'DOCKER_PASS'
         )]) {
           sh '''
-            echo "🔧 Building Docker image..."
+            echo "🔧 Đăng nhập Docker Hub..."
             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER_NAME" --password-stdin
 
-            # Build image từ Dockerfile.backend
-            docker build -t docker.io/$DOCKER_USER/$IMAGE_NAME:latest -f ./Dockerfile.backend .
+            echo "🐳 Build & push backend..."
+            docker build -t docker.io/$DOCKER_USER/proshop-backend:latest -f Dockerfile.backend .
+            docker push docker.io/$DOCKER_USER/proshop-backend:latest
 
-            echo "📦 Pushing image lên Docker Hub..."
-            docker push docker.io/$DOCKER_USER/$IMAGE_NAME:latest
+            echo "🐳 Build & push frontend..."
+            docker build -t docker.io/$DOCKER_USER/proshop-frontend:latest -f frontend/Dockerfile.frontend ./frontend
+            docker push docker.io/$DOCKER_USER/proshop-frontend:latest
 
             docker logout
           '''
@@ -40,29 +39,24 @@ pipeline {
       }
     }
 
-    stage('Deploy to AWS EC2') {
+    stage('Deploy to EC2 using Docker Compose') {
       steps {
-        // Dùng SSH key lưu trong Jenkins credential ID 'deploy-ssh'
         sshagent(credentials: ['deploy-ssh']) {
           sh '''
-            echo "🚀 Deploying to EC2..."
+            echo "🚀 SSH vào EC2 và deploy..."
             ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_HOST "
+              cd /home/ubuntu/demodeploy10 || exit 1
+
               echo '📥 Pull image mới nhất...'
-              docker pull docker.io/$DOCKER_USER/$IMAGE_NAME:latest &&
+              docker compose pull
 
-              echo '🧹 Dừng và xóa container cũ nếu có...'
-              docker stop $IMAGE_NAME || true &&
-              docker rm $IMAGE_NAME || true &&
+              echo '🧹 Dừng container cũ...'
+              docker compose down
 
-              echo '⚙️  Chạy container MongoDB nếu chưa có...'
-              docker ps -a | grep -q 'mongo' || docker run -d --name mongo -v mongo_data:/data/db -p 27017:27017 mongo &&
+              echo '🚀 Chạy lại toàn bộ stack...'
+              docker compose up -d
 
-              echo '🚀 Khởi chạy container ứng dụng...'
-              docker run -d --name $IMAGE_NAME \
-                -p 80:5000 \
-                --env-file /home/ubuntu/.env \
-                --link mongo:mongo \
-                docker.io/$DOCKER_USER/$IMAGE_NAME:latest
+              echo '✅ Hoàn tất deploy!'
             "
           '''
         }
@@ -72,10 +66,10 @@ pipeline {
 
   post {
     success {
-      echo '✅ Deploy thành công lên AWS EC2!'
+      echo '✅ CI/CD thành công — toàn bộ container (mongo + backend + frontend) đã chạy.'
     }
     failure {
-      echo '❌ Deploy thất bại! Kiểm tra lại log trên Jenkins hoặc EC2.'
+      echo '❌ Lỗi deploy — kiểm tra lại log Jenkins hoặc EC2.'
     }
   }
 }
